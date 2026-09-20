@@ -173,7 +173,7 @@
 <div class="topbar">
   <div class="brand"><span class="mark">C</span> Canada Business Map</div>
   <nav>
-    <a href="/taxonomy.html">Category &amp; city index</a>
+    <a href="taxonomy.html">Category &amp; city index</a>
   </nav>
 </div>
 
@@ -215,7 +215,9 @@
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="/taxonomy-data.js"></script>
+<script src="taxonomy-data.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
 <script>
 (() => {
   "use strict";
@@ -419,7 +421,7 @@
     fsaLoading = true;
     btn.textContent = "Loading…";
     try {
-      const geo = await (await fetch("/fsa.geojson")).json();
+      const geo = await (await fetch("fsa.geojson")).json();
       fsaLayer = L.geoJSON(geo, {
         style: f => ({
           fillColor: fsaColor(f.properties.per_km2),
@@ -552,15 +554,12 @@
   const NOMINATIM = "https://nominatim.openstreetmap.org/search";
   const KINDS = ["amenity", "shop", "office", "craft", "healthcare", "tourism", "leisure"];
 
-  /* Primary source: the local Overture Maps extract, served by serve.py.
+  /* Primary source: the Overture Maps extract, searched in the browser (app.js).
      Returns far more than the public OSM endpoints and is already deduped. */
   async function viaLocal(term, bbox) {
     const [s, w, n, e] = bbox;
-    const url = "/api/search?what=" + encodeURIComponent(term) +
-      "&s=" + s + "&w=" + w + "&n=" + n + "&e=" + e;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("local API " + res.status);
-    const data = await res.json();
+    const data = await window.App.api("/api/search?what=" + encodeURIComponent(term) +
+      "&s=" + s + "&w=" + w + "&n=" + n + "&e=" + e);
     return {
       removed: data.removed,
       total: data.total,

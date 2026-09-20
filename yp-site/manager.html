@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Manager sign in · DART</title>
-<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="app.css">
 <style>
   body { display: grid; place-items: center; background: var(--black); }
   .card { width: 100%; max-width: 400px; background: #fff; border-radius: 4px;
@@ -43,10 +43,25 @@
       <input type="password" id="password" autocomplete="current-password" required>
       <button class="btn btn-navy" id="go" type="submit">Sign in as manager</button>
     </form>
-    <div class="swap">Consultant? <a href="/login.html">Use the consultant portal →</a></div>
+    <form id="setup" hidden>
+      <div class="who" style="margin:-22px -24px 18px;border-top:1px solid var(--line)">
+        <b>First run.</b> No accounts exist yet — create the manager account.
+        You'll add the rest of the team from the Team screen.
+      </div>
+      <div class="err" id="serr" hidden></div>
+      <label class="lbl" for="sname">Your name</label>
+      <input type="text" id="sname" autocomplete="name">
+      <label class="lbl" for="semail">Email</label>
+      <input type="email" id="semail" autocomplete="username" required>
+      <label class="lbl" for="spassword">Password <small>(8+ characters)</small></label>
+      <input type="password" id="spassword" autocomplete="new-password" required minlength="8">
+      <button class="btn btn-navy" id="sgo" type="submit">Create manager account</button>
+    </form>
+    <div class="swap">Consultant? <a href="login.html">Use the consultant portal →</a></div>
   </div>
 
-<script src="/app.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
 <script>
 (() => {
   "use strict";
@@ -55,7 +70,31 @@
   const go = document.getElementById("go");
 
   try { sessionStorage.setItem("dart_portal", "manager"); } catch { /* private mode */ }
-  api("/api/auth/me").then(d => { if (d.user) location.href = "/index.html"; }).catch(() => {});
+  api("/api/auth/me").then(d => { if (d.user) location.href = "index.html"; }).catch(() => {});
+
+  /* Brand-new database: swap the sign-in form for account creation. */
+  api("/api/setup").then(d => {
+    if (!d.needed) return;
+    document.getElementById("form").hidden = true;
+    document.getElementById("setup").hidden = false;
+  }).catch(() => {});
+
+  document.getElementById("setup").addEventListener("submit", async e => {
+    e.preventDefault();
+    const serr = document.getElementById("serr"), sgo = document.getElementById("sgo");
+    serr.hidden = true; sgo.disabled = true; sgo.textContent = "Creating…";
+    try {
+      await api("/api/auth/setup", { method: "POST", body: {
+        name: document.getElementById("sname").value.trim(),
+        email: document.getElementById("semail").value,
+        password: document.getElementById("spassword").value,
+      } });
+      location.href = "index.html";
+    } catch (ex) {
+      serr.textContent = ex.message; serr.hidden = false;
+      sgo.disabled = false; sgo.textContent = "Create manager account";
+    }
+  });
 
   document.getElementById("form").addEventListener("submit", async e => {
     e.preventDefault();
@@ -68,10 +107,10 @@
         password: document.getElementById("password").value,
         portal: "manager",
       } });
-      location.href = "/index.html";
+      location.href = "index.html";
     } catch (ex) {
-      err.innerHTML = ex.status === 403
-        ? ex.message + ' <a href="/login.html">Go to the consultant portal →</a>'
+      err.innerHTML = ex.portal === "consultant"
+        ? ex.message + ' <a href="login.html">Go to the consultant portal →</a>'
         : ex.message;
       err.hidden = false;
       go.disabled = false;

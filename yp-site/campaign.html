@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Campaign · DART</title>
-<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="app.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
   .maprow { position: relative; display: grid; grid-template-columns: 1fr 370px;
@@ -275,7 +275,7 @@
   <div class="foot-actions">
     <button class="btn btn-ghost" id="dateBtn" type="button">📅 <span id="dateLabel">Set date</span></button>
     <div class="spacer"></div>
-    <a class="btn btn-ghost" href="/index.html">← Back</a>
+    <a class="btn btn-ghost" href="index.html">← Back</a>
     <button class="btn btn-navy" id="save" type="button">💾 Save</button>
   </div>
 </div>
@@ -294,9 +294,10 @@
 <footer class="brand"><b>DART</b> · postal areas from Statistics Canada · businesses from Overture Maps</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="/app.js"></script>
-<script src="/taxonomy-data.js"></script>
-<script src="/places-index.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="taxonomy-data.js"></script>
+<script src="places-index.js"></script>
 <script>
 (async () => {
   "use strict";
@@ -414,7 +415,7 @@
   el("tabBiz").addEventListener("click", () => showTab("biz"));
 
   /* ---------- areas: load ---------- */
-  const geo = await (await fetch("/fsa.geojson")).json();
+  const geo = await (await fetch("fsa.geojson")).json();
   L.geoJSON(geo, {
     style: f => styleFor(f.properties),
     onEachFeature: (f, layer) => {
@@ -814,7 +815,7 @@
         setTimeout(() => { el("savedTag").hidden = true; }, 2500);
       } else {
         const r = await api("/api/campaigns", { method: "POST", body: payload });
-        location.href = "/campaign.html?id=" + r.id;
+        location.href = "campaign.html?id=" + r.id;
         return;
       }
     } catch (ex) { fail("Save failed: " + ex.message); }

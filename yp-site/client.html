@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Client · DART</title>
-<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="app.css">
 <style>
   .cols { display: grid; grid-template-columns: 1.15fr 1fr; gap: 22px; align-items: start; }
   .card { border: 1px solid var(--line); border-radius: 4px; margin-bottom: 20px; }
@@ -42,7 +42,7 @@
   <div class="page-head">
     <h1 id="title">Client</h1>
     <div class="spacer"></div>
-    <a class="btn btn-ghost" href="/clients.html">← All clients</a>
+    <a class="btn btn-ghost" href="clients.html">← All clients</a>
     <button class="btn btn-navy" id="saveBtn" type="button">💾 Save details</button>
   </div>
 
@@ -116,7 +116,8 @@
 
 <footer class="brand"><b>DART</b> · client record</footer>
 
-<script src="/app.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
 <script>
 (async () => {
   "use strict";
@@ -133,12 +134,12 @@
     el("ok").textContent = m; el("ok").hidden = false;
     setTimeout(() => { el("ok").hidden = true; }, 2500);
   };
-  if (!id) { location.href = "/clients.html"; return; }
+  if (!id) { location.href = "clients.html"; return; }
 
   const meta = await api("/api/meta");
   el("status").innerHTML = meta.account_statuses.map(s => `<option>${s}</option>`).join("");
   el("aKind").innerHTML = meta.activity_types.map(s => `<option>${s}</option>`).join("");
-  el("newCampaign").href = "/campaign.html?account=" + id;
+  el("newCampaign").href = "campaign.html?account=" + id;
 
   const FIELDS = ["name", "industry", "phone", "email", "street", "city", "province", "status", "note"];
 
@@ -166,7 +167,7 @@
             <span class="spacer"></span>
             <span class="badge">${fmt(c.businesses)} biz</span>
             <span class="badge badge-grey">${fmt(c.farms)} farms</span>
-            <a class="btn btn-ghost" href="/campaign.html?id=${c.id}">Open</a>
+            <a class="btn btn-ghost" href="campaign.html?id=${c.id}">Open</a>
           </div>`).join("")
       : '<div class="row"><small>No campaigns for this client yet.</small></div>';
 

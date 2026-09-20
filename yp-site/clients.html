@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Clients · DART</title>
-<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
 <div class="navbar" id="nav"></div>
@@ -71,7 +71,8 @@
 
 <footer class="brand"><b>DART</b> · client relationships</footer>
 
-<script src="/app.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
 <script>
 (async () => {
   "use strict";
@@ -92,7 +93,7 @@
     el("rows").innerHTML = view.map(a => `
       <tr>
         <td>${a.id}</td>
-        <td><a href="/client.html?id=${a.id}"><b>${esc(a.name)}</b></a></td>
+        <td><a href="client.html?id=${a.id}"><b>${esc(a.name)}</b></a></td>
         <td>${esc(a.industry) || "—"}</td>
         <td>${esc(a.phone) || "—"}</td>
         <td>${esc([a.city, a.province].filter(Boolean).join(", ")) || "—"}</td>
@@ -100,7 +101,7 @@
         <td><span class="badge">${fmt(a.campaigns)}</span></td>
         <td>${fmt(a.contacts)}</td>
         <td>${esc(a.owner_email || "—")}</td>
-        <td><a class="btn btn-ghost" href="/client.html?id=${a.id}">Open</a></td>
+        <td><a class="btn btn-ghost" href="client.html?id=${a.id}">Open</a></td>
       </tr>`).join("");
     el("empty").hidden = view.length > 0;
     el("count").textContent = view.length
@@ -141,7 +142,7 @@
     if (!body.name) { el("merr").textContent = "A client needs a name."; el("merr").hidden = false; return; }
     try {
       const r = await api("/api/accounts", { method: "POST", body });
-      location.href = "/client.html?id=" + r.id;
+      location.href = "client.html?id=" + r.id;
     } catch (ex) {
       el("merr").textContent = ex.message;
       el("merr").hidden = false;

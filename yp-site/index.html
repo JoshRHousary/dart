@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Campaigns · DART</title>
-<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
 <div class="navbar" id="nav"></div>
@@ -14,7 +14,7 @@
     <h1>Campaigns</h1>
     <div class="spacer"></div>
     <input type="search" id="q" placeholder="Search campaigns…" style="width:240px">
-    <a class="btn btn-teal" href="/campaign.html">+ Create a new Campaign</a>
+    <a class="btn btn-teal" href="campaign.html">+ Create a new Campaign</a>
   </div>
 
   <div class="table-wrap">
@@ -41,7 +41,7 @@
 
   <div class="empty" id="empty" hidden>
     <p>No campaigns yet.</p>
-    <a class="btn btn-teal" href="/campaign.html">Create your first campaign</a>
+    <a class="btn btn-teal" href="campaign.html">Create your first campaign</a>
   </div>
 
   <div class="count-line" id="count"></div>
@@ -50,7 +50,8 @@
 
 <footer class="brand"><b>DART</b> · business &amp; farm targeting · v1.0</footer>
 
-<script src="/app.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
 <script>
 (async () => {
   "use strict";
@@ -79,7 +80,7 @@
         <td>${c.id}</td>
         <td>${esc(c.title) || '<span style="color:var(--muted)">Untitled</span>'}</td>
         <td>${c.account_id
-              ? `<a href="/client.html?id=${c.account_id}">${esc(c.client)}</a>`
+              ? `<a href="client.html?id=${c.account_id}">${esc(c.client)}</a>`
               : esc(c.account_name) || "—"}</td>
         <td><span class="pill stage-${esc(c.stage)}">${esc(c.stage)}</span></td>
         <td>${c.assignee_name
@@ -92,7 +93,7 @@
         <td>${esc(c.owner)}</td>
         <td>${fmtDate(c.modified_at)}</td>
         <td style="white-space:nowrap">
-          <a class="btn btn-ghost" href="/campaign.html?id=${c.id}">Open</a>
+          <a class="btn btn-ghost" href="campaign.html?id=${c.id}">Open</a>
           <button class="btn btn-danger" data-del="${c.id}" type="button">Delete</button>
         </td>
       </tr>`).join("");

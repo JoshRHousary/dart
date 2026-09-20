@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Team · DART</title>
-<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
 <div class="navbar" id="nav"></div>
@@ -61,7 +61,8 @@
 
 <footer class="brand"><b>DART</b> · team management</footer>
 
-<script src="/app.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
 <script>
 (async () => {
   "use strict";
@@ -69,7 +70,7 @@
 
   const user = await requireUser();
   if (!user) return;
-  if (user.role !== "manager") { location.href = "/index.html"; return; }
+  if (user.role !== "manager") { location.href = "index.html"; return; }
   navbar(user, "team");
 
   const el = i => document.getElementById(i);

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Consultant sign in · DART</title>
-<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="app.css">
 <style>
   body { display: grid; place-items: center; background: var(--band); }
   .card { width: 100%; max-width: 400px; background: #fff; border-radius: 4px;
@@ -43,10 +43,11 @@
       <input type="password" id="password" autocomplete="current-password" required>
       <button class="btn btn-teal" id="go" type="submit">Sign in</button>
     </form>
-    <div class="swap">Manager? <a href="/manager.html">Use the manager portal →</a></div>
+    <div class="swap">Manager? <a href="manager.html">Use the manager portal →</a></div>
   </div>
 
-<script src="/app.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
 <script>
 (() => {
   "use strict";
@@ -55,7 +56,7 @@
   const go = document.getElementById("go");
 
   try { sessionStorage.setItem("dart_portal", "consultant"); } catch { /* private mode */ }
-  api("/api/auth/me").then(d => { if (d.user) location.href = "/index.html"; }).catch(() => {});
+  api("/api/auth/me").then(d => { if (d.user) location.href = "index.html"; }).catch(() => {});
 
   document.getElementById("form").addEventListener("submit", async e => {
     e.preventDefault();
@@ -68,7 +69,7 @@
         password: document.getElementById("password").value,
         portal: "consultant",
       } });
-      location.href = "/index.html";
+      location.href = "index.html";
     } catch (ex) {
       err.textContent = ex.message;
       err.hidden = false;
