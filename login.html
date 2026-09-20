@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consultant sign in · DART</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  body { display: grid; place-items: center; background: var(--band); }
+  .card { width: 100%; max-width: 400px; background: #fff; border-radius: 4px;
+          box-shadow: 0 6px 30px rgba(0,0,0,.14); overflow: hidden; margin: 20px; }
+  .card header { background: var(--yellow); color: var(--black); padding: 24px;
+                 display: flex; align-items: center; gap: 12px; }
+  .card header .dot { width: 40px; height: 40px; border-radius: 50%; background: var(--black);
+                      display: grid; place-items: center; color: var(--yellow); font-weight: 700; }
+  .card header b { display: block; font-size: 1.3rem; font-weight: 700; letter-spacing: -.02em; }
+  .card header small { font-size: .72rem; font-weight: 600; }
+  .who { background: var(--yellow-soft); padding: 11px 24px; font-size: .78rem;
+         border-bottom: 1px solid var(--line); }
+  .who b { font-weight: 600; }
+  form { padding: 22px 24px 24px; }
+  form .btn { width: 100%; justify-content: center; margin-top: 18px; padding-block: 11px; font-size: .92rem; }
+  .swap { padding: 14px 24px; border-top: 1px solid var(--line); background: var(--band);
+          font-size: .78rem; text-align: center; color: var(--muted); }
+  .swap a { color: var(--black); font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <header>
+      <span class="dot">D</span>
+      <span><b>DART</b><small>Consultant portal</small></span>
+    </header>
+    <div class="who">
+      For <b>Media Account Consultants</b> and <b>Direct Mail Experts</b> —
+      your own campaigns and anything assigned to you.
+    </div>
+    <form id="form">
+      <div class="err" id="err" hidden></div>
+      <label class="lbl" for="email">Email</label>
+      <input type="email" id="email" autocomplete="username" required autofocus>
+      <label class="lbl" for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password" required>
+      <button class="btn btn-teal" id="go" type="submit">Sign in</button>
+    </form>
+    <div class="swap">Manager? <a href="manager.html">Use the manager portal →</a></div>
+  </div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+(() => {
+  "use strict";
+  const { api } = window.App;
+  const err = document.getElementById("err");
+  const go = document.getElementById("go");
+
+  try { sessionStorage.setItem("dart_portal", "consultant"); } catch { /* private mode */ }
+  api("/api/auth/me").then(d => { if (d.user) location.href = "index.html"; }).catch(() => {});
+
+  document.getElementById("form").addEventListener("submit", async e => {
+    e.preventDefault();
+    err.hidden = true;
+    go.disabled = true;
+    go.textContent = "Signing in…";
+    try {
+      await api("/api/auth/login", { method: "POST", body: {
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value,
+        portal: "consultant",
+      } });
+      location.href = "index.html";
+    } catch (ex) {
+      err.textContent = ex.message;
+      err.hidden = false;
+      go.disabled = false;
+      go.textContent = "Sign in";
+    }
+  });
+})();
+</script>
+</body>
+</html>

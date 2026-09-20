@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Client · DART</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  .cols { display: grid; grid-template-columns: 1.15fr 1fr; gap: 22px; align-items: start; }
+  .card { border: 1px solid var(--line); border-radius: 4px; margin-bottom: 20px; }
+  .card > h2 { margin: 0; padding: 12px 16px; background: var(--black); color: #fff;
+               font-size: .9rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+  .card > h2 .spacer { margin-left: auto; }
+  .card > h2 .btn { padding: 4px 11px; font-size: .76rem; }
+  .card .inner { padding: 16px; }
+  dl.kv { display: grid; grid-template-columns: 130px 1fr; gap: 9px 14px; margin: 0; font-size: .86rem; }
+  dl.kv dt { color: var(--muted); }
+  dl.kv dd { margin: 0; font-weight: 500; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+         border-bottom: 1px solid var(--line); font-size: .85rem; }
+  .row:last-child { border-bottom: 0; }
+  .row .spacer { margin-left: auto; }
+  .row small { color: var(--muted); }
+  .tl { padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: .85rem; }
+  .tl:last-child { border-bottom: 0; }
+  .tl .top { display: flex; gap: 9px; align-items: center; }
+  .tl .kind { background: var(--yellow); color: var(--black); font-size: .68rem;
+              font-weight: 700; text-transform: uppercase; padding: 2px 8px; border-radius: 2px; }
+  .tl .when { margin-left: auto; color: var(--muted); font-size: .76rem; }
+  .tl .body { margin-top: 5px; color: var(--muted); }
+  .tl.done .top b { text-decoration: line-through; color: var(--muted); }
+  .addform { padding: 14px 16px; background: var(--band); display: grid; gap: 9px; }
+  .addform .line { display: flex; gap: 9px; }
+  .addform select { width: 130px; flex: none; }
+  @media (max-width: 1000px) { .cols { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="navbar" id="nav"></div>
+
+<div class="page">
+  <div class="page-head">
+    <h1 id="title">Client</h1>
+    <div class="spacer"></div>
+    <a class="btn btn-ghost" href="clients.html">← All clients</a>
+    <button class="btn btn-navy" id="saveBtn" type="button">💾 Save details</button>
+  </div>
+
+  <div class="err" id="err" hidden></div>
+  <div class="ok" id="ok" hidden></div>
+
+  <div class="cols">
+    <div>
+      <div class="card">
+        <h2>Details</h2>
+        <div class="inner">
+          <div class="cols" style="grid-template-columns:1fr 1fr;gap:0 18px">
+            <div>
+              <label class="lbl" for="name">Business name</label><input type="text" id="name">
+              <label class="lbl" for="industry">Industry</label><input type="text" id="industry">
+              <label class="lbl" for="phone">Phone</label><input type="text" id="phone">
+              <label class="lbl" for="email">Email</label><input type="text" id="email">
+            </div>
+            <div>
+              <label class="lbl" for="street">Street</label><input type="text" id="street">
+              <label class="lbl" for="city">City</label><input type="text" id="city">
+              <label class="lbl" for="province">Province</label><input type="text" id="province">
+              <label class="lbl" for="status">Status</label><select id="status"></select>
+            </div>
+          </div>
+          <label class="lbl" for="note">Note</label><textarea id="note"></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Campaigns <span class="spacer"></span>
+          <a class="btn btn-teal" id="newCampaign" href="#">+ New campaign</a></h2>
+        <div id="campaigns"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>Contacts</h2>
+        <div id="contacts"></div>
+        <div class="addform">
+          <div class="line">
+            <input type="text" id="cName" placeholder="Name">
+            <input type="text" id="cRole" placeholder="Role">
+          </div>
+          <div class="line">
+            <input type="text" id="cEmail" placeholder="Email">
+            <input type="text" id="cPhone" placeholder="Phone">
+          </div>
+          <button class="btn btn-ghost" id="addContact" type="button">Add contact</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Activity</h2>
+        <div class="addform">
+          <div class="line">
+            <select id="aKind"></select>
+            <input type="text" id="aSubject" placeholder="Subject">
+          </div>
+          <div class="line">
+            <input type="date" id="aDue" title="Due date, for tasks">
+            <button class="btn btn-ghost" id="addActivity" type="button">Log</button>
+          </div>
+        </div>
+        <div id="activities"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="brand"><b>DART</b> · client record</footer>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+(async () => {
+  "use strict";
+  const { api, esc, fmt, fmtDate, requireUser, navbar } = window.App;
+
+  const user = await requireUser();
+  if (!user) return;
+  navbar(user, "clients");
+
+  const id = new URLSearchParams(location.search).get("id");
+  const el = i => document.getElementById(i);
+  const fail = m => { el("err").textContent = m; el("err").hidden = false; };
+  const said = m => {
+    el("ok").textContent = m; el("ok").hidden = false;
+    setTimeout(() => { el("ok").hidden = true; }, 2500);
+  };
+  if (!id) { location.href = "clients.html"; return; }
+
+  const meta = await api("/api/meta");
+  el("status").innerHTML = meta.account_statuses.map(s => `<option>${s}</option>`).join("");
+  el("aKind").innerHTML = meta.activity_types.map(s => `<option>${s}</option>`).join("");
+  el("newCampaign").href = "campaign.html?account=" + id;
+
+  const FIELDS = ["name", "industry", "phone", "email", "street", "city", "province", "status", "note"];
+
+  async function load() {
+    const { account } = await api("/api/accounts/" + id);
+    el("title").textContent = account.name;
+    document.title = account.name + " · DART";
+    FIELDS.forEach(f => { el(f).value = account[f] ?? ""; });
+
+    el("contacts").innerHTML = account.contacts.length
+      ? account.contacts.map(c => `
+          <div class="row">
+            <div><b>${esc(c.name)}</b>${c.is_primary ? ' <span class="pill pill-master">primary</span>' : ""}
+              <br><small>${esc([c.role, c.email, c.phone].filter(Boolean).join(" · "))}</small></div>
+            <span class="spacer"></span>
+            <button class="btn btn-danger" data-delc="${c.id}" type="button">Remove</button>
+          </div>`).join("")
+      : '<div class="row"><small>No contacts yet.</small></div>';
+
+    el("campaigns").innerHTML = account.campaigns.length
+      ? account.campaigns.map(c => `
+          <div class="row">
+            <div><b>${esc(c.title) || "Untitled"}</b>
+              <br><small>${esc(c.stage)} · ${fmtDate(c.campaign_date)} · ${esc(c.owner)}</small></div>
+            <span class="spacer"></span>
+            <span class="badge">${fmt(c.businesses)} biz</span>
+            <span class="badge badge-grey">${fmt(c.farms)} farms</span>
+            <a class="btn btn-ghost" href="campaign.html?id=${c.id}">Open</a>
+          </div>`).join("")
+      : '<div class="row"><small>No campaigns for this client yet.</small></div>';
+
+    el("activities").innerHTML = account.activities.length
+      ? account.activities.map(a => `
+          <div class="tl ${a.done ? "done" : ""}">
+            <div class="top">
+              <span class="kind">${esc(a.kind)}</span>
+              <b>${esc(a.subject) || "—"}</b>
+              <span class="when">${fmtDate(a.created_at)}</span>
+            </div>
+            ${a.body ? `<div class="body">${esc(a.body)}</div>` : ""}
+            <div class="body">
+              ${esc(a.user_name || a.user_email)}
+              ${a.due_at ? " · due " + fmtDate(a.due_at) : ""}
+              ${a.kind === "task" ? `<button class="btn btn-ghost" style="padding:2px 9px;font-size:.74rem;margin-left:8px"
+                   data-done="${a.id}" data-val="${a.done ? 0 : 1}" type="button">${
+                     a.done ? "Reopen" : "Mark done"}</button>` : ""}
+            </div>
+          </div>`).join("")
+      : '<div class="tl"><small>Nothing logged yet.</small></div>';
+  }
+
+  el("saveBtn").addEventListener("click", async () => {
+    const body = {};
+    FIELDS.forEach(f => { body[f] = el(f).value.trim(); });
+    try {
+      await api("/api/accounts/" + id, { method: "PUT", body });
+      said("Details saved.");
+      el("title").textContent = body.name;
+    } catch (ex) { fail(ex.message); }
+  });
+
+  el("addContact").addEventListener("click", async () => {
+    const body = {
+      account_id: +id, name: el("cName").value.trim(), role: el("cRole").value.trim(),
+      email: el("cEmail").value.trim(), phone: el("cPhone").value.trim(),
+    };
+    if (!body.name) { el("cName").focus(); return; }
+    await api("/api/contacts", { method: "POST", body });
+    ["cName", "cRole", "cEmail", "cPhone"].forEach(i => { el(i).value = ""; });
+    await load();
+  });
+
+  el("contacts").addEventListener("click", async e => {
+    const b = e.target.closest("button[data-delc]");
+    if (!b) return;
+    await api("/api/contacts/" + b.dataset.delc, { method: "DELETE" });
+    await load();
+  });
+
+  el("addActivity").addEventListener("click", async () => {
+    const body = {
+      account_id: +id, kind: el("aKind").value,
+      subject: el("aSubject").value.trim(), due_at: el("aDue").value,
+    };
+    if (!body.subject) { el("aSubject").focus(); return; }
+    await api("/api/activities", { method: "POST", body });
+    el("aSubject").value = "";
+    el("aDue").value = "";
+    await load();
+  });
+
+  el("activities").addEventListener("click", async e => {
+    const b = e.target.closest("button[data-done]");
+    if (!b) return;
+    await api("/api/activities/" + b.dataset.done,
+      { method: "PUT", body: { done: b.dataset.val === "1" } });
+    await load();
+  });
+
+  await load();
+})();
+</script>
+</body>
+</html>

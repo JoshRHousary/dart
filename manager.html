@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manager sign in · DART</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  body { display: grid; place-items: center; background: var(--black); }
+  .card { width: 100%; max-width: 400px; background: #fff; border-radius: 4px;
+          box-shadow: 0 10px 44px rgba(0,0,0,.5); overflow: hidden; margin: 20px;
+          border-top: 5px solid var(--yellow); }
+  .card header { background: var(--black); color: #fff; padding: 24px;
+                 display: flex; align-items: center; gap: 12px; }
+  .card header .dot { width: 40px; height: 40px; border-radius: 50%; background: var(--yellow);
+                      display: grid; place-items: center; color: var(--black); font-weight: 700; }
+  .card header b { display: block; font-size: 1.3rem; font-weight: 700; letter-spacing: -.02em; }
+  .card header small { font-size: .72rem; font-weight: 600; color: var(--yellow); }
+  .who { background: var(--band); padding: 11px 24px; font-size: .78rem;
+         border-bottom: 1px solid var(--line); }
+  .who b { font-weight: 600; }
+  form { padding: 22px 24px 24px; }
+  form .btn { width: 100%; justify-content: center; margin-top: 18px; padding-block: 11px; font-size: .92rem; }
+  .swap { padding: 14px 24px; border-top: 1px solid var(--line); background: var(--band);
+          font-size: .78rem; text-align: center; color: var(--muted); }
+  .swap a { color: var(--black); font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <header>
+      <span class="dot">D</span>
+      <span><b>DART</b><small>MANAGER PORTAL</small></span>
+    </header>
+    <div class="who">
+      Full access — <b>every campaign</b>, every client, and team management.
+    </div>
+    <form id="form">
+      <div class="err" id="err" hidden></div>
+      <label class="lbl" for="email">Email</label>
+      <input type="email" id="email" autocomplete="username" required autofocus>
+      <label class="lbl" for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password" required>
+      <button class="btn btn-navy" id="go" type="submit">Sign in as manager</button>
+    </form>
+    <form id="setup" hidden>
+      <div class="who" style="margin:-22px -24px 18px;border-top:1px solid var(--line)">
+        <b>First run.</b> No accounts exist yet — create the manager account.
+        You'll add the rest of the team from the Team screen.
+      </div>
+      <div class="err" id="serr" hidden></div>
+      <label class="lbl" for="sname">Your name</label>
+      <input type="text" id="sname" autocomplete="name">
+      <label class="lbl" for="semail">Email</label>
+      <input type="email" id="semail" autocomplete="username" required>
+      <label class="lbl" for="spassword">Password <small>(8+ characters)</small></label>
+      <input type="password" id="spassword" autocomplete="new-password" required minlength="8">
+      <button class="btn btn-navy" id="sgo" type="submit">Create manager account</button>
+    </form>
+    <div class="swap">Consultant? <a href="login.html">Use the consultant portal →</a></div>
+  </div>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+(() => {
+  "use strict";
+  const { api } = window.App;
+  const err = document.getElementById("err");
+  const go = document.getElementById("go");
+
+  try { sessionStorage.setItem("dart_portal", "manager"); } catch { /* private mode */ }
+  api("/api/auth/me").then(d => { if (d.user) location.href = "index.html"; }).catch(() => {});
+
+  /* Brand-new database: swap the sign-in form for account creation. */
+  api("/api/setup").then(d => {
+    if (!d.needed) return;
+    document.getElementById("form").hidden = true;
+    document.getElementById("setup").hidden = false;
+  }).catch(() => {});
+
+  document.getElementById("setup").addEventListener("submit", async e => {
+    e.preventDefault();
+    const serr = document.getElementById("serr"), sgo = document.getElementById("sgo");
+    serr.hidden = true; sgo.disabled = true; sgo.textContent = "Creating…";
+    try {
+      await api("/api/auth/setup", { method: "POST", body: {
+        name: document.getElementById("sname").value.trim(),
+        email: document.getElementById("semail").value,
+        password: document.getElementById("spassword").value,
+      } });
+      location.href = "index.html";
+    } catch (ex) {
+      serr.textContent = ex.message; serr.hidden = false;
+      sgo.disabled = false; sgo.textContent = "Create manager account";
+    }
+  });
+
+  document.getElementById("form").addEventListener("submit", async e => {
+    e.preventDefault();
+    err.hidden = true;
+    go.disabled = true;
+    go.textContent = "Signing in…";
+    try {
+      await api("/api/auth/login", { method: "POST", body: {
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value,
+        portal: "manager",
+      } });
+      location.href = "index.html";
+    } catch (ex) {
+      err.innerHTML = ex.portal === "consultant"
+        ? ex.message + ' <a href="login.html">Go to the consultant portal →</a>'
+        : ex.message;
+      err.hidden = false;
+      go.disabled = false;
+      go.textContent = "Sign in as manager";
+    }
+  });
+})();
+</script>
+</body>
+</html>

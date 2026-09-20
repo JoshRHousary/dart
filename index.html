@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campaigns · DART</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="navbar" id="nav"></div>
+
+<div class="page">
+  <div class="page-head">
+    <h1>Campaigns</h1>
+    <div class="spacer"></div>
+    <input type="search" id="q" placeholder="Search campaigns…" style="width:240px">
+    <a class="btn btn-teal" href="campaign.html">+ Create a new Campaign</a>
+  </div>
+
+  <div class="table-wrap">
+    <table class="grid" id="grid">
+      <thead>
+        <tr>
+          <th data-key="id">Id <span class="car">⇅</span></th>
+          <th data-key="title">Title <span class="car">⇅</span></th>
+          <th data-key="client">Client <span class="car">⇅</span></th>
+          <th data-key="stage">Stage <span class="car">⇅</span></th>
+          <th data-key="assignee_name">Assigned to <span class="car">⇅</span></th>
+          <th data-key="campaign_date">Effective date <span class="car">⇅</span></th>
+          <th data-key="businesses">Businesses <span class="car">⇅</span></th>
+          <th data-key="farms">Farms <span class="car">⇅</span></th>
+          <th data-key="total">Total <span class="car">⇅</span></th>
+          <th data-key="owner">Owner <span class="car">⇅</span></th>
+          <th data-key="modified_at">Modified <span class="car">⇅</span></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <div class="empty" id="empty" hidden>
+    <p>No campaigns yet.</p>
+    <a class="btn btn-teal" href="campaign.html">Create your first campaign</a>
+  </div>
+
+  <div class="count-line" id="count"></div>
+  <div class="pager" id="pager"></div>
+</div>
+
+<footer class="brand"><b>DART</b> · business &amp; farm targeting · v1.0</footer>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+(async () => {
+  "use strict";
+  const { api, esc, fmt, fmtDate, requireUser, navbar, sortable } = window.App;
+
+  const user = await requireUser();
+  if (!user) return;
+  navbar(user, "campaigns");
+
+  const PER_PAGE = 20;
+  let all = [], view = [], page = 1;
+
+  const rowsEl = document.getElementById("rows");
+  const emptyEl = document.getElementById("empty");
+  const countEl = document.getElementById("count");
+  const pagerEl = document.getElementById("pager");
+  const qEl = document.getElementById("q");
+
+  function render() {
+    const pages = Math.max(1, Math.ceil(view.length / PER_PAGE));
+    page = Math.min(page, pages);
+    const slice = view.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+    rowsEl.innerHTML = slice.map(c => `
+      <tr>
+        <td>${c.id}</td>
+        <td>${esc(c.title) || '<span style="color:var(--muted)">Untitled</span>'}</td>
+        <td>${c.account_id
+              ? `<a href="client.html?id=${c.account_id}">${esc(c.client)}</a>`
+              : esc(c.account_name) || "—"}</td>
+        <td><span class="pill stage-${esc(c.stage)}">${esc(c.stage)}</span></td>
+        <td>${c.assignee_name
+              ? esc(c.assignee_name) + ` <span class="pill">${esc(c.assignee_team)}</span>`
+              : '<span style="color:var(--muted)">unassigned</span>'}</td>
+        <td>${fmtDate(c.campaign_date)}</td>
+        <td><span class="badge">${fmt(c.businesses)}</span></td>
+        <td><span class="badge badge-grey">${fmt(c.farms)}</span></td>
+        <td><b>${fmt(c.total)}</b></td>
+        <td>${esc(c.owner)}</td>
+        <td>${fmtDate(c.modified_at)}</td>
+        <td style="white-space:nowrap">
+          <a class="btn btn-ghost" href="campaign.html?id=${c.id}">Open</a>
+          <button class="btn btn-danger" data-del="${c.id}" type="button">Delete</button>
+        </td>
+      </tr>`).join("");
+
+    emptyEl.hidden = view.length > 0;
+    countEl.textContent = view.length
+      ? `Showing ${(page - 1) * PER_PAGE + 1} – ${Math.min(page * PER_PAGE, view.length)} of ${view.length} items.`
+      : "";
+
+    pagerEl.innerHTML = pages > 1
+      ? `<button ${page === 1 ? "disabled" : ""} data-p="1">«</button>
+         <button ${page === 1 ? "disabled" : ""} data-p="${page - 1}">‹</button>` +
+        Array.from({ length: pages }, (_, i) =>
+          `<button class="${i + 1 === page ? "on" : ""}" data-p="${i + 1}">${i + 1}</button>`).join("") +
+        `<button ${page === pages ? "disabled" : ""} data-p="${page + 1}">›</button>
+         <button ${page === pages ? "disabled" : ""} data-p="${pages}">»</button>`
+      : "";
+  }
+
+  function filter() {
+    const q = qEl.value.trim().toLowerCase();
+    view = !q ? all.slice() : all.filter(c =>
+      [c.title, c.client, c.stage, c.assignee_name, c.owner, String(c.id)]
+        .some(v => String(v ?? "").toLowerCase().includes(q)));
+    page = 1;
+    render();
+  }
+
+  pagerEl.addEventListener("click", e => {
+    const b = e.target.closest("button[data-p]");
+    if (b) { page = +b.dataset.p; render(); window.scrollTo({ top: 0 }); }
+  });
+
+  rowsEl.addEventListener("click", async e => {
+    const b = e.target.closest("button[data-del]");
+    if (!b) return;
+    const c = all.find(x => x.id === +b.dataset.del);
+    if (!confirm(`Delete campaign ${c.id}${c.title ? ' "' + c.title + '"' : ""}? This can't be undone.`)) return;
+    await api("/api/campaigns/" + c.id, { method: "DELETE" });
+    all = all.filter(x => x.id !== c.id);
+    filter();
+  });
+
+  qEl.addEventListener("input", filter);
+
+  const data = await api("/api/campaigns");
+  all = data.campaigns.map(c => ({
+    ...c,
+    total: (c.businesses || 0) + (c.farms || 0),
+    client: c.account || c.account_name || "",
+  }));
+  view = all.slice();
+  sortable(document.getElementById("grid"), view, render);
+  render();
+})();
+</script>
+</body>
+</html>

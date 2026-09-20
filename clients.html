@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clients · DART</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="navbar" id="nav"></div>
+
+<div class="page">
+  <div class="page-head">
+    <h1>Clients</h1>
+    <div class="spacer"></div>
+    <input type="search" id="q" placeholder="Name, city, phone, industry…" style="width:260px">
+    <button class="btn btn-teal" id="add" type="button">+ New client</button>
+  </div>
+
+  <div class="err" id="err" hidden></div>
+
+  <div class="table-wrap">
+    <table class="grid" id="grid">
+      <thead>
+        <tr>
+          <th data-key="id">Id <span class="car">⇅</span></th>
+          <th data-key="name">Client <span class="car">⇅</span></th>
+          <th data-key="industry">Industry <span class="car">⇅</span></th>
+          <th data-key="phone">Phone <span class="car">⇅</span></th>
+          <th data-key="city">City <span class="car">⇅</span></th>
+          <th data-key="status">Status <span class="car">⇅</span></th>
+          <th data-key="campaigns">Campaigns <span class="car">⇅</span></th>
+          <th data-key="contacts">Contacts <span class="car">⇅</span></th>
+          <th data-key="owner_email">Owner <span class="car">⇅</span></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <div class="empty" id="empty" hidden>
+    <p>No clients yet.</p>
+    <button class="btn btn-teal" id="add2" type="button">Add your first client</button>
+  </div>
+  <div class="count-line" id="count"></div>
+</div>
+
+<div class="modal-back" id="modal" hidden>
+  <div class="modal">
+    <h3>New client</h3>
+    <div class="body">
+      <div class="err" id="merr" hidden></div>
+      <label class="lbl" for="name">Business name</label>
+      <input type="text" id="name">
+      <label class="lbl" for="industry">Industry</label>
+      <input type="text" id="industry" placeholder="Toy store, Dental clinic…">
+      <label class="lbl" for="phone">Phone</label>
+      <input type="text" id="phone">
+      <label class="lbl" for="city">City</label>
+      <input type="text" id="city">
+      <label class="lbl" for="status">Status</label>
+      <select id="status"></select>
+    </div>
+    <div class="foot">
+      <button class="btn btn-ghost" id="cancel" type="button">Cancel</button>
+      <button class="btn btn-teal" id="create" type="button">Create</button>
+    </div>
+  </div>
+</div>
+
+<footer class="brand"><b>DART</b> · client relationships</footer>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+(async () => {
+  "use strict";
+  const { api, esc, fmt, requireUser, navbar, sortable } = window.App;
+
+  const user = await requireUser();
+  if (!user) return;
+  navbar(user, "clients");
+
+  const el = i => document.getElementById(i);
+  let all = [], view = [], meta = {};
+
+  meta = await api("/api/meta");
+  el("status").innerHTML = meta.account_statuses
+    .map(s => `<option value="${s}">${s}</option>`).join("");
+
+  function render() {
+    el("rows").innerHTML = view.map(a => `
+      <tr>
+        <td>${a.id}</td>
+        <td><a href="client.html?id=${a.id}"><b>${esc(a.name)}</b></a></td>
+        <td>${esc(a.industry) || "—"}</td>
+        <td>${esc(a.phone) || "—"}</td>
+        <td>${esc([a.city, a.province].filter(Boolean).join(", ")) || "—"}</td>
+        <td><span class="pill">${esc(a.status)}</span></td>
+        <td><span class="badge">${fmt(a.campaigns)}</span></td>
+        <td>${fmt(a.contacts)}</td>
+        <td>${esc(a.owner_email || "—")}</td>
+        <td><a class="btn btn-ghost" href="client.html?id=${a.id}">Open</a></td>
+      </tr>`).join("");
+    el("empty").hidden = view.length > 0;
+    el("count").textContent = view.length
+      ? view.length + " client" + (view.length === 1 ? "" : "s") + "." : "";
+  }
+
+  async function load() {
+    const d = await api("/api/accounts");
+    all = d.accounts;
+    view = all.slice();
+    render();
+  }
+
+  el("q").addEventListener("input", () => {
+    const q = el("q").value.trim().toLowerCase();
+    view = !q ? all.slice() : all.filter(a =>
+      [a.name, a.city, a.phone, a.industry, a.owner_email]
+        .some(v => String(v ?? "").toLowerCase().includes(q)));
+    render();
+  });
+
+  const open = () => {
+    el("merr").hidden = true;
+    ["name", "industry", "phone", "city"].forEach(i => { el(i).value = ""; });
+    el("modal").hidden = false;
+    el("name").focus();
+  };
+  el("add").addEventListener("click", open);
+  el("add2").addEventListener("click", open);
+  el("cancel").addEventListener("click", () => { el("modal").hidden = true; });
+
+  el("create").addEventListener("click", async () => {
+    const body = {
+      name: el("name").value.trim(), industry: el("industry").value.trim(),
+      phone: el("phone").value.trim(), city: el("city").value.trim(),
+      status: el("status").value,
+    };
+    if (!body.name) { el("merr").textContent = "A client needs a name."; el("merr").hidden = false; return; }
+    try {
+      const r = await api("/api/accounts", { method: "POST", body });
+      location.href = "client.html?id=" + r.id;
+    } catch (ex) {
+      el("merr").textContent = ex.message;
+      el("merr").hidden = false;
+    }
+  });
+
+  await load();
+  sortable(document.getElementById("grid"), view, render);
+})();
+</script>
+</body>
+</html>

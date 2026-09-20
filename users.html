@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team · DART</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="navbar" id="nav"></div>
+
+<div class="page">
+  <div class="page-head">
+    <h1>Team</h1>
+    <div class="spacer"></div>
+    <button class="btn btn-navy" id="add" type="button">+ Add a user</button>
+  </div>
+
+  <div class="err" id="err" hidden></div>
+  <div class="ok" id="ok" hidden></div>
+
+  <div class="table-wrap">
+    <table class="grid">
+      <thead>
+        <tr>
+          <th>Id</th><th>Email</th><th>Name</th><th>Team</th><th>Role</th>
+          <th>Campaigns</th><th>Created</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <div class="count-line" id="count"></div>
+</div>
+
+<div class="modal-back" id="modal" hidden>
+  <div class="modal">
+    <h3>Add a user</h3>
+    <div class="body">
+      <div class="err" id="merr" hidden></div>
+      <label class="lbl" for="email">Email</label>
+      <input type="email" id="email" autocomplete="off">
+      <label class="lbl" for="name">Name</label>
+      <input type="text" id="name" autocomplete="off">
+      <label class="lbl" for="pw">Password</label>
+      <input type="text" id="pw" autocomplete="off">
+      <label class="lbl" for="team">Team</label>
+      <select id="team">
+        <option>Sales</option><option>Design</option>
+        <option>Production</option><option>Management</option>
+      </select>
+      <label class="lbl" for="role">Role</label>
+      <select id="role"></select>
+    </div>
+    <div class="foot">
+      <button class="btn btn-ghost" id="cancel" type="button">Cancel</button>
+      <button class="btn btn-teal" id="create" type="button">Create</button>
+    </div>
+  </div>
+</div>
+
+<footer class="brand"><b>DART</b> · team management</footer>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+(async () => {
+  "use strict";
+  const { api, esc, fmt, fmtDate, requireUser, navbar } = window.App;
+
+  const user = await requireUser();
+  if (!user) return;
+  if (user.role !== "manager") { location.href = "index.html"; return; }
+  navbar(user, "team");
+
+  const el = i => document.getElementById(i);
+  const META = await api("/api/meta");
+  el("role").innerHTML = Object.entries(META.roles)
+    .map(([key, r]) => `<option value="${key}">${r.label} — ${r.blurb}</option>`).join("");
+  el("role").value = "mac";
+
+  async function load() {
+    const { users } = await api("/api/users");
+    el("rows").innerHTML = users.map(u => `
+      <tr>
+        <td>${u.id}</td>
+        <td>${esc(u.email)}</td>
+        <td>${esc(u.name) || "—"}</td>
+        <td><span class="pill">${esc(u.team || "Sales")}</span></td>
+        <td>${u.role === "manager"
+              ? '<span class="pill pill-master">MANAGER</span>'
+              : `<span class="pill">${esc((META.roles[u.role] || {}).label || u.role)}</span>`}</td>
+        <td><span class="badge">${fmt(u.campaigns)}</span></td>
+        <td>${fmtDate(u.created_at)}</td>
+        <td>${u.disabled ? "Disabled" : "Active"}</td>
+      </tr>`).join("");
+    el("count").textContent = users.length + " team member" + (users.length === 1 ? "" : "s") + ".";
+  }
+
+  el("add").addEventListener("click", () => {
+    el("merr").hidden = true;
+    ["email", "name", "pw"].forEach(i => { el(i).value = ""; });
+    el("pw").value = Array.from(crypto.getRandomValues(new Uint8Array(9)))
+      .map(b => "abcdefghijkmnpqrstuvwxyz23456789"[b % 32]).join("");
+    el("modal").hidden = false;
+    el("email").focus();
+  });
+  el("cancel").addEventListener("click", () => { el("modal").hidden = true; });
+
+  el("create").addEventListener("click", async () => {
+    el("merr").hidden = true;
+    const body = {
+      email: el("email").value.trim(),
+      name: el("name").value.trim(),
+      password: el("pw").value,
+      role: el("role").value,
+      team: el("team").value,
+    };
+    try {
+      await api("/api/users", { method: "POST", body });
+      el("modal").hidden = true;
+      el("ok").textContent =
+        `Created ${body.email}. Password: ${body.password} — copy it now, it isn't shown again.`;
+      el("ok").hidden = false;
+      await load();
+    } catch (ex) {
+      el("merr").textContent = ex.message;
+      el("merr").hidden = false;
+    }
+  });
+
+  await load();
+})();
+</script>
+</body>
+</html>
