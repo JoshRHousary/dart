@@ -1,0 +1,13 @@
+# Local data — rebuilt by deploy/setup.sh; app.db holds user accounts + CRM records
+data/
+
+# Python
+__pycache__/
+*.pyc
+
+# Logs / scratch
+*.log
+yp-page.html
+
+# Claude Code local settings
+.claude/settings.local.json
